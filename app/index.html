@@ -1,0 +1,365 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width">
+
+  <title>Lost Festival of Perth</title>
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+
+  <script src="http://aratcliffe.github.io/Leaflet.tooltip/dist/leaflet.tooltip.js"></script>
+  <link rel="stylesheet" href="http://aratcliffe.github.io/Leaflet.tooltip/dist/leaflet.tooltip.css">
+
+  <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+  <script type="text/javascript">
+    /*
+    Blank > Rivers Trace > Rivers finish tracing > Wetlands come up > <brief pause> >
+    River lines fade away > <left with wetlands only> > Slow fade in of map > <brief pause>
+    > Venues fade in
+    */
+
+    // Load the Visualization API and the piechart package.
+    google.load('visualization', '1.0', {'packages':['corechart']});
+
+    // Set a callback to run when the Google Visualization API is loaded.
+    // https://developers.google.com/chart/interactive/docs/reference#DataTable
+    // https://developers.google.com/chart/interactive/docs/querylanguage
+    google.setOnLoadCallback(function() {
+      var query = new google.visualization.Query('http://spreadsheets.google.com/tq?key=1BckVEf4kcxBbzGZPzFpgIYGXFeHNRiEqeVidcZiZxZU&gid=1577171681');
+      query.send(function(response) {
+        // return;
+        console.log("Narrative Spreadsheet Loaded");
+        if(debug) {
+          return;
+        }
+
+        // This is hideous!
+        var data = JSON.parse(response.getDataTable().toJSON());
+        var narrative = [];
+        // var totdelay = 0;
+        // var running_delay = 0;
+        var last_delay = 0;
+
+        for(key in data["rows"]) {
+          // console.log(running_delay);
+          var cols = data["rows"][key]["c"];
+
+          var feature = {
+            name: cols[0]["v"],
+            fade_in_duration: cols[1]["v"],
+            fade_in_delay: cols[2]["v"],
+            fade_out_duration: cols[3]["v"],
+            fade_out_delay: cols[4]["v"],
+            y_offset: cols[5]["v"]
+          };
+
+          g.append("text")
+            .classed('data', true)
+            .attr("x", 480)
+            .attr("y", 250 + feature.y_offset)
+            .style("text-anchor", "middle")
+            .attr("fill","#fff")
+            .style("stroke-width", 1)
+            .style("stroke", "#000000")
+            .style("fill", "#000000")
+            .style({"font-size": "18px", "z-index": "999999999"})
+            .style("text-anchor", "middle")
+            .style("opacity", 0)
+            .text(feature.name)
+            .transition()
+              .style("opacity", 1)
+              // .duration(feature.fade_in_duration)
+              // .delay(running_delay + feature.fade_in_offset)
+              .duration(feature.fade_in_duration)
+              .delay(feature.fade_in_delay)
+            .transition()
+              .style("opacity", 0)
+              // .duration(feature.fade_out_duration)
+              // .delay(running_delay + 2000 + feature.fade_out_offset)
+              .duration(feature.fade_out_duration)
+              .delay(feature.fade_out_delay)
+            .remove();
+
+            // totdelay += feature.fade_in_delay + feature.fade_out_delay;
+            // running_delay += feature.fade_in_delay + 2000 + feature.fade_out_delay;
+
+            last_delay = feature.fade_out_delay + feature.fade_out_duration;
+        }
+
+        console.log("last_delay", last_delay);
+
+        g.select(".background")
+          .transition()
+            .delay(last_delay)
+          .each("end", function() {
+            console.log("Rivers begin");
+            rivers();
+          })
+          // .remove();
+      })
+    });
+
+    google.setOnLoadCallback(function() {
+      var query = new google.visualization.Query('http://spreadsheets.google.com/tq?key=1BckVEf4kcxBbzGZPzFpgIYGXFeHNRiEqeVidcZiZxZU#gid=0');
+      query.send(function(response) {
+        // return;
+
+        console.log("Feature Spreadsheet Loaded");
+
+        // This is hideous!
+        var data = JSON.parse(response.getDataTable().toJSON());
+        var features_by_type = [];
+        for(key in data["rows"]) {
+          var cols = data["rows"][key]["c"];
+          var type = cols[4]["v"].toLowerCase();
+
+          if(features_by_type[type] === undefined) {
+            features_by_type[type] = [];
+          }
+
+          cols[7]["v"] *= 2;
+          cols[8]["v"] *= 2;
+
+          features_by_type[type].push({
+            name: cols[0]["v"],
+            alt_names: (cols[1] !== null) ? cols[1]["v"] : "",
+            LatLngCentre: new L.LatLng(cols[2]["v"], cols[3]["v"]),
+            LatLng: function(lat, long, w, h, type) {
+                // Adjust from centroid lat,long to topleft
+                // return new L.LatLng(lat, long);
+                if(type == "venue") {
+                  // return new L.LatLng(lat, long);
+                  var centroidpoint = map.latLngToLayerPoint(new L.LatLng(lat, long));
+                  centroidpoint.x -= w / 2;
+                  centroidpoint.y -= h / 2;
+                  return map.layerPointToLatLng(centroidpoint);
+                }
+
+                var centroidpoint = map.latLngToLayerPoint(new L.LatLng(lat, long));
+                centroidpoint.x -= (w * wetlandImgScaleFactor) / 2;
+                centroidpoint.y -= (h * wetlandImgScaleFactor) / 2;
+                return map.layerPointToLatLng(centroidpoint);
+            }(cols[2]["v"], cols[3]["v"], cols[7]["v"], cols[8]["v"], type),
+            bounds: function(lat, lng, w, h) {
+              // console.log("bounds calc");
+              var center = new L.LatLng(lat, lng);
+              var point = map.latLngToLayerPoint(center);
+              // console.log(center, point);
+
+              var topleftpoint = L.point(point.x - ((w * wetlandImgScaleFactor) / 2), point.y - ((h * wetlandImgScaleFactor) / 2));
+              var bottomrightpoint = L.point(point.x + ((w * wetlandImgScaleFactor) / 2), point.y + ((h * wetlandImgScaleFactor) / 2));
+              // console.log("points", topleftpoint, bottomrightpoint);
+
+              var topleft = map.layerPointToLatLng(topleftpoint);
+              var bottomright = map.layerPointToLatLng(bottomrightpoint);
+              // console.log("bounds", topleft, bottomright);
+              return [topleft, bottomright];
+            }(cols[2]["v"], cols[3]["v"], cols[7]["v"], cols[8]["v"]),
+            type: type,
+            image_url: function(url) {
+              return url
+                .replace(/http:\/\/govpond.org\/lostfestivalofperth\//, "http://thelostfestival.org/images/wetlands/")
+                .replace(/venue-arts/, "/venues/");
+            }(cols[6]["v"]),
+            image_w: cols[7]["v"],
+            image_h: cols[8]["v"],
+            delay: cols[9]["v"],
+            duration: cols[10]["v"],
+            description: cols[11]["v"]
+          });
+        }
+
+        var group_els = [];
+        var venue_els = []
+
+        // draw (but don't position) our D3 shapes
+        features_by_type["wetland feature"].forEach(function(item, idx) {
+            group_els[idx] = svg.append("g")
+                                .attr("class", "leaflet-zoom-hide")
+                              .append("svg:image")
+                                .attr("class", "wetland clicky")
+                                .attr("opacity", 0)
+                                .style("opacity", 0)
+                                .attr("x", 0)
+                                .attr("y", 0)
+                                .attr("xlink:href", function(d) { return item.image_url })
+                                .attr("width", function(d) { return item.image_w * wetlandImgScaleFactor; })
+                                .attr("height", function(d) { return item.image_h * wetlandImgScaleFactor; })
+                                .on("click", function() {
+                                  if(item.name == "Derbarl Yerrigan") {
+                                    return;
+                                  }
+                                  // return;
+
+                                  d3.event.stopPropagation();
+                                  // console.log("click");
+                                  console.log(d3.event.pageX, d3.event.pageY);
+                                  console.log(map.layerPointToLatLng(L.point(d3.event.pageX, d3.event.pageY)));
+
+                                  var html = "<h3>" + item.name + "</h3>" + item.alt_names.split(", ").join("<br>");
+                                  // queryDivIcon = L.divIcon({id: "divIcon", className: 'my-div-icon', html: html});
+                                  // you can set .my-div-icon styles in CSS
+
+                                  L.popup({
+                                    autoPan: false,
+                                    className: "wetlands-popup"
+                                  })
+                                    .setLatLng(map.layerPointToLatLng(L.point(d3.event.pageX, d3.event.pageY)))
+                                    .setContent(html)
+                                    .openOn(map);
+
+                                  // console.log(p);
+
+                                  // marker = L.marker(map.layerPointToLatLng(L.point(d3.event.pageX, d3.event.pageY)), {icon: L.divIcon({id: "divIcon", className: 'my-div-icon-foo'})})
+                                  //   .addTo(map)
+                                  //   .bindPopup(html)
+                                  //   .openPopup();
+                                });
+
+              if(item.name == "Derbarl Yerrigan") {
+                group_els[idx].attr("class", "wetland");
+              }
+
+              // group_els[idx]
+              //                   .attr("opacity", 0)
+              //                   .transition()
+              //                     .attr("opacity", 1)
+              //                     .delay(item.delay)
+              //                     .duration(item.duration);
+        });
+
+
+
+
+        // draw (but don't position) our D3 shapes
+        features_by_type["venue"].forEach(function(item, idx) {
+          // console.log(item);
+
+          venue_els[idx] = svg.append("g")
+                                .attr("class", "leaflet-zoom-hide")
+                              .append("svg:image")
+                                .attr("class", "venue")
+                                .attr("opacity", 0)
+                                .style("opacity", 0)
+                                .attr("x", 0)
+                                .attr("y", 0)
+                                .attr("tooltip", item.name)
+                                .attr("xlink:href", function(d) { return item.image_url })
+                                .attr("width", function(d) { return item.image_w; })
+                                .attr("height", function(d) { return item.image_h; })
+                                .on("click", function() {
+                                  d3.event.stopPropagation();
+                                  // return;
+                                  // console.log("click");
+                                  var html = "<h3>" + item.name + "</h3>" + item.description;
+                                  // you can set .my-div-icon styles in CSS
+
+                                  // var southwestpoint = map.latLngToLayerPoint(map.getBounds().getSouthWest());
+                                  // console.log(d3.event.pageX, d3.event.pageY);
+
+                                  L.popup({
+                                    autoPan: false,
+                                    className: "venue-popup"
+                                  })
+                                    .setLatLng(map.layerPointToLatLng(L.point(d3.event.pageX, d3.event.pageY)))
+                                    .setContent(html)
+                                    .openOn(map);
+
+                                  // marker = L.marker(
+                                  //   map.layerPointToLatLng(L.point(d3.event.pageX, d3.event.pageY)),
+                                  //   // map.getCenter(),
+                                  //   // map.getBounds().getSouthWest(),
+                                  //   // map.layerPointToLatLng(L.point(southwestpoint.x + 100, southwestpoint.y - 50)),
+                                  //   {icon: L.divIcon({id: "divIcon", className: 'my-div-icon-foo'})})
+                                  //     .addTo(map)
+                                  //     .bindPopup(html)
+                                  //     .openPopup();
+                                });
+
+            // venue_els[idx]
+            //                     .attr("opacity", 0)
+            //                     .transition()
+            //                       .attr("opacity", 1)
+            //                       .delay(item.delay)
+            //                       .duration(item.duration);
+        });
+
+          // define a redraw function
+          var resetSVG = function() {
+            console.log("moveend, resetSVG");
+            var ctopleft = map.containerPointToLatLng(L.point(0,0));
+            var ltopleft = map.latLngToLayerPoint(ctopleft);
+            var zoom_level = Math.pow(2, (map.getZoom() - mapOriginalZoom));
+            var venue_scale = {
+              "1": 22,
+              "2": 12,
+              "4": 8
+            };
+            var venue_scale_pos = {
+              "1": [-1, 7],
+              "2": [-5, -2],
+              "4": [-9, -5]
+            };
+
+            // console.log(map.getZoom() - mapOriginalZoom, zoom_level);
+
+            svg.style("left", ltopleft.x + "px")
+               .style("top", ltopleft.y + "px");
+
+            for (var i = 0; i < group_els.length; i ++) {
+              var centre = map.latLngToContainerPoint(features_by_type["wetland feature"][i].LatLng);
+
+              // console.log(group_els[i], "transform", "scale(" + zoom_level + ")translate(" + (centre.x / zoom_level) + "," + (centre.y / zoom_level) + ")");
+              group_els[i].attr("transform", "scale(" + zoom_level + ")translate(" + (centre.x / zoom_level) + "," + (centre.y / zoom_level) + ")");
+            }
+
+             for (var i = 0; i < venue_els.length; i ++) {
+               var centre = map.latLngToContainerPoint(features_by_type["venue"][i].LatLng);
+              //  console.log((centre.x / zoom_level), (centre.y / zoom_level));
+              //  console.log((centre.x / zoom_level) - 40, (centre.y / zoom_level) - 40);
+
+               venue_els[i]
+                .attr("transform", "scale(" + zoom_level + ")translate(" + ((centre.x / zoom_level) - venue_scale_pos[zoom_level][0]) + "," + ((centre.y / zoom_level) - venue_scale_pos[zoom_level][1]) + ")")
+                .attr("width", venue_scale[zoom_level])
+                .attr("height", venue_scale[zoom_level]);
+             }
+          }
+
+
+          // run it when the map pans/zooms
+          map.on("moveend", resetSVG);
+          resetSVG();
+
+
+          if(debug) {
+            rivers();
+          }
+      });
+    });
+  </script>
+  <script src="http://maps.google.com/maps/api/js?sensor=false"></script>
+
+  <script src="scripts/leaflet-google.js"></script>
+
+  <!-- Lost Festival -->
+  <link href="styles/main.css" rel="stylesheet">
+  <link href="styles/svg.css" rel="stylesheet">
+
+  <meta content="Lost Festival of Perth" property="og:title">
+  <meta content="Hack the Festival" name="description">
+  <link rel="shortcut icon" href="/images/favico.ico" type="image/x-icon" />
+</head>
+<body>
+  <div id="map"></div>
+  <div id="links">
+    <a href='#' class='project link'>Project</a> | <a href='#' class='credits link'>Credits</a> | <a href='#' class='references link'>References</a>
+  </div>
+
+  <!-- Lost Festival -->
+  <script src="scripts/main.js"></script>
+  <!-- <script src="https://spreadsheets.google.com/feeds/list/1BckVEf4kcxBbzGZPzFpgIYGXFeHNRiEqeVidcZiZxZU/od6/public/values?alt=json-in-script&callback=data_loaded"></script> -->
+</body>
+</html>

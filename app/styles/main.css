@@ -1,0 +1,59 @@
+@import url(//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.2/leaflet.css);
+
+#map {
+  width: 960px;
+  height: 500px;
+}
+
+.leaflet-tooltip {
+  font-family: Helvetica Neue, Arial, Helvetica, sans-serif;
+  padding: 11px;
+}
+
+#links {
+  font-family: Helvetica Neue, Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  padding-left: 10px;
+  padding-top: 10px;
+  display: none;
+}
+
+.leaflet-tooltip .proper_name {
+  color: rgb(255, 1, 126);
+  font-weight: bold;
+}
+
+.leaflet-popup-content-wrapper {
+  background-color: rgba(255, 255, 255, 0.9);
+  background-opacity: 0.7;
+}
+
+.leaflet-popup-content {
+  font-family: Helvetica Neue, Arial, Helvetica, sans-serif;
+  /*width: 100% !important;*/
+  /*width: 200px !important;*/
+  /*height: auto !important;*/
+  /*padding: 7px;*/
+}
+
+.venue-popup .leaflet-popup-content {
+  width: 100% !important;
+}
+
+.leaflet-popup-content h3 {
+  color: rgb(192, 21, 91);
+  margin-top: 0px;
+  margin-bottom: 8px;
+}
+
+/*path {
+  fill: #000;
+  fill-opacity: .2;
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+path:hover {
+  fill: brown;
+  fill-opacity: .7;
+}*/
