@@ -5,8 +5,21 @@ var marker = null;
 var ending = false;
 var debug = (window.location.search.indexOf("test=1") === 1) ? true : false;
 var rivers_duration = (debug) ? 2000 : 10000;
+var narrative_els = [];
+var map_moving = false;
+
 var map = new L.Map("map", {center: new L.LatLng(-31.947, 115.85), zoom: 14, maxZoom: 16, minZoom: 14});
 // var map = new L.Map("map", {center: new L.LatLng(-31.920805, 115.805032), zoom: 14, maxZoom: 16});
+
+map.on("movestart", function() {
+  map_moving = true;
+}).on("moveend", function() {
+  // Eugh. Syncing up Leaflet and D3 mouse events seems to be a PITA.
+  // Use map_moving in D3 land to suppress info windows.
+  window.setTimeout(function() {
+    map_moving = false;
+  }, 100);
+});
 
 // https://snazzymaps.com/
 var googleLayer = new L.Google('ROADMAP', {},
@@ -40,8 +53,8 @@ g.append("rect")
   .attr("class", "background")
   .attr("x", 0)
   .attr("y", 0)
-  .attr("width", 960)
-  .attr("height", 500)
+  .attr("width", "100%")
+  .attr("height", "100%")
   .style("fill", "#FFF");
 
 /* Project About Content */
@@ -51,8 +64,52 @@ d3.selectAll(".link")
 
     var content = d3.select("#" + this.className.split(" ")[0]);
     if(content.attr("on") === "true") {
-      content.style("opacity", 0).style("display", "none").attr("on", false);
+      content.style("display", "none").attr("on", false);
     } else {
-      content.style("opacity", 0.95).style("display", "block").attr("on", true);
+      content.style("display", "block").attr("on", true);
     }
   });
+
+d3.selectAll(".about-content-close-button")
+  .on("click", function() {
+    d3.event.preventDefault();
+    d3.select("#" + this.parentNode.id).style("display", "none").attr("on", false);
+  });
+
+d3.select(window).on('resize', function() {
+  /* Find the new window dimensions */
+  var map_size = d3.select("#map").node().getBoundingClientRect();
+
+  svg.attr("width", map_size.width)
+    .attr("height", map_size.height)
+
+  svg_rivers.attr("width", map_size.width)
+    .attr("height", map_size.height);
+
+  for(var i = 0; i < narrative_els.length; i ++) {
+    narrative_els[i].attr("x", svg.attr("width") / 2)
+    narrative_els[i].attr("y", svg.attr("height") / 2 + parseInt(narrative_els[i].attr("y_offset")))
+  }
+});
+
+function disable_map_interaction() {
+  // Disable drag and zoom handlers.
+  map.dragging.disable();
+  map.touchZoom.disable();
+  map.doubleClickZoom.disable();
+  map.scrollWheelZoom.disable();
+
+  // Disable tap handler, if present.
+  if (map.tap) map.tap.disable();
+}
+
+function enable_map_interaction() {
+  // Disable drag and zoom handlers.
+  map.dragging.enable();
+  map.touchZoom.enable();
+  map.doubleClickZoom.enable();
+  map.scrollWheelZoom.enable();
+
+  // Disable tap handler, if present.
+  if (map.tap) map.tap.enable();
+}

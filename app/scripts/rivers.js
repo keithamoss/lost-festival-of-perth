@@ -308,7 +308,14 @@ function rivers() {
                 });
 
               // Begin fading in wetlands
-              d3.selectAll(".wetland")
+              d3.selectAll(".wetland-clickable")
+                .attr("class", "wetland clicky")
+                .style("opacity", 0)
+                .transition()
+                  .style("opacity", 1)
+                  .duration(2000);
+              d3.selectAll(".wetland-not-clickable")
+                .attr("class", "wetland")
                 .style("opacity", 0)
                 .transition()
                   .style("opacity", 1)
@@ -329,6 +336,8 @@ function rivers() {
                   .duration(2000)
                   .style("opacity", 0.95)
                   .style("display", "block");
+
+              enable_map_interaction();
             });
 
           // item["linePath"].transition()

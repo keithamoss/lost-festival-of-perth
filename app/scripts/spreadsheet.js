@@ -5,11 +5,16 @@ google.load('visualization', '1.0', {'packages':['corechart']});
 // https://developers.google.com/chart/interactive/docs/reference#DataTable
 // https://developers.google.com/chart/interactive/docs/querylanguage
 
+// Hourann
+// http://jsfiddle.net/daBosq/jj2oysot/1/
+
 /* Narrative Sheet */
 google.setOnLoadCallback(function() {
   if(debug) {
     return;
   }
+
+  disable_map_interaction();
 
   var query = new google.visualization.Query('http://spreadsheets.google.com/tq?key=1BckVEf4kcxBbzGZPzFpgIYGXFeHNRiEqeVidcZiZxZU&gid=1577171681');
   query.send(function(response) {
@@ -30,12 +35,15 @@ google.setOnLoadCallback(function() {
         }
       }
 
-      g.append("text")
+      narrative_els[y] = g.append("text")
         .classed('data', true)
         .attr("class", "narrative-text")
-        .attr("x", 480)
-        .attr("y", 250 + item.y_offset)
+        .attr("y_offset", item.y_offset)
+        .attr("x", svg.attr("width") / 2)
+        .attr("y", svg.attr("height") / 2 + item.y_offset)
         .text(item.text)
+
+      narrative_els[y]
         .transition()
           .style("opacity", 1)
           .duration(item.fade_in_duration)
@@ -46,7 +54,7 @@ google.setOnLoadCallback(function() {
           .delay(item.fade_out_time)
         .remove();
 
-      narrative_end_ms = item.fade_out_delay + item.fade_out_duration;
+      narrative_end_ms = item.fade_out_time + item.fade_out_duration;
     }
 
     g.select(".background")
@@ -80,6 +88,7 @@ google.setOnLoadCallback(function() {
       }
 
       item.type = item.type.toLowerCase().replace(/ /g, "_");
+      item.alternate_names = (item.alternate_names === null) ? "" : item.alternate_names;
       item.image_width *= 2;
       item.image_height *= 2;
       item["LatLng"] = function() {
@@ -115,13 +124,14 @@ google.setOnLoadCallback(function() {
     /* Containers for the D3 elements */
     var wetland_els = [];
     var venue_els = []
+    var w_g = svg.append("g");
 
     // draw (but don't position) our D3 shapes
     features_by_type["wetland_feature"].forEach(function(item, idx) {
-        wetland_els[idx] = svg.append("g")
+        wetland_els[idx] = w_g
           .attr("class", "leaflet-zoom-hide")
           .append("svg:image")
-            .attr("class", "wetland clicky")
+            .attr("class", "wetland-clickable")
             .attr("opacity", 0)
             .style("opacity", 0)
             .attr("x", 0)
@@ -132,6 +142,9 @@ google.setOnLoadCallback(function() {
             .on("click", function() {
               if(item.feature_name == "Derbarl Yerrigan") {
                 return;
+              }
+              if(map_moving) {
+                return; // Suppress D3 clicks while the map is being moved
               }
 
               d3.event.stopPropagation();
@@ -152,7 +165,7 @@ google.setOnLoadCallback(function() {
             });
 
           if(item.feature_name == "Derbarl Yerrigan") {
-            wetland_els[idx].attr("class", "wetland");
+            wetland_els[idx].attr("class", "wetland-not-clickable");
           }
     });
 
@@ -171,6 +184,10 @@ google.setOnLoadCallback(function() {
           .attr("width", function(d) { return item.image_width; })
           .attr("height", function(d) { return item.image_height; })
           .on("click", function() {
+            if(map_moving) {
+              return; // Suppress D3 clicks while the map is being moved
+            }
+
             d3.event.stopPropagation();
 
             var html = "<h3>" + item.feature_name + "</h3>" + item.description;
@@ -186,7 +203,8 @@ google.setOnLoadCallback(function() {
               // .setLatLng(map.getBounds().getSouthWest())
               .setLatLng(new L.LatLng(map.getBounds().getSouth(), map.getBounds().getCenter().lng))
               .setContent(html)
-              .openOn(map);
+              .openOn(map)
+              .update();
           });
     });
 
