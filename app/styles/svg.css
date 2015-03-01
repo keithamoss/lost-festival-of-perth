@@ -2,6 +2,16 @@ svg {
   position: relative;
 }
 
+/* Narrative */
+.narrative-text {
+  text-anchor: middle;
+  stroke-width: 1;
+  stroke: #000000;
+  fill: #000000;
+  font-size: 18px;
+  opacity: 0;
+}
+
 image {
   cursor: pointer;
 }
