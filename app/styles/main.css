@@ -1,26 +1,18 @@
 @import url(//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.2/leaflet.css);
 
+body {
+  font-family: Helvetica Neue, Arial, Helvetica, sans-serif;
+}
+
 #map {
   width: 960px;
   height: 500px;
 }
 
-.leaflet-tooltip {
-  font-family: Helvetica Neue, Arial, Helvetica, sans-serif;
-  padding: 11px;
-}
-
-#links {
-  font-family: Helvetica Neue, Arial, Helvetica, sans-serif;
-  font-size: 13px;
-  padding-left: 10px;
-  padding-top: 10px;
-  display: none;
-}
-
-.leaflet-tooltip .proper_name {
-  color: rgb(255, 1, 126);
-  font-weight: bold;
+/* Popups */
+.venue-popup {
+  width: 962px;
+  height: 512px;
 }
 
 .leaflet-popup-content-wrapper {
@@ -30,14 +22,10 @@
 
 .leaflet-popup-content {
   font-family: Helvetica Neue, Arial, Helvetica, sans-serif;
-  /*width: 100% !important;*/
-  /*width: 200px !important;*/
-  /*height: auto !important;*/
-  /*padding: 7px;*/
 }
 
 .venue-popup .leaflet-popup-content {
-  width: 100% !important;
+  padding-left: 30px;
 }
 
 .leaflet-popup-content h3 {
@@ -46,14 +34,25 @@
   margin-bottom: 8px;
 }
 
-/*path {
-  fill: #000;
-  fill-opacity: .2;
-  stroke: #fff;
-  stroke-width: 1.5px;
+
+/* Project About Content */
+#links {
+  font-family: Helvetica Neue, Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  padding-left: 10px;
+  padding-top: 10px;
+  /*display: none;*/
 }
 
-path:hover {
-  fill: brown;
-  fill-opacity: .7;
-}*/
+#about_content .content {
+  display: none;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 970px;
+  height: 510px;
+  padding-left: 56px;
+  background-color: white;
+  font-size: 13px;
+  overflow-y: scroll;
+}

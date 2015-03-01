@@ -85,17 +85,25 @@ google.setOnLoadCallback(function() {
       item["LatLng"] = function() {
         // Adjust from centroid lat,long to topleft
         if(item.type === "venue") {
-          // return new L.LatLng(lat, long);
+          // return new L.LatLng(item.latitude, item.longitude);
           var centroidpoint = map.latLngToLayerPoint(new L.LatLng(item.latitude, item.longitude));
           centroidpoint.x -= item.image_width / 2;
           centroidpoint.y -= item.image_height / 2;
           return map.layerPointToLatLng(centroidpoint);
         }
 
+        // return new L.LatLng(item.latitude, item.longitude);
         var centroidpoint = map.latLngToLayerPoint(new L.LatLng(item.latitude, item.longitude));
         centroidpoint.x -= (item.image_width * wetlandImgScaleFactor) / 2;
         centroidpoint.y -= (item.image_height * wetlandImgScaleFactor) / 2;
         return map.layerPointToLatLng(centroidpoint);
+      }();
+      item["CentroidLatLng"] = function() {
+        if(item.type === "venue") {
+          return new L.LatLng(item.latitude, item.longitude);
+        }
+
+        return new L.LatLng(item.latitude, item.longitude);
       }();
 
       if(features_by_type[item.type] === undefined) {
@@ -137,7 +145,8 @@ google.setOnLoadCallback(function() {
                 autoPan: false,
                 className: "wetlands-popup"
               })
-                .setLatLng(map.layerPointToLatLng(L.point(d3.event.pageX, d3.event.pageY)))
+                // .setLatLng(map.layerPointToLatLng(L.point(d3.event.pageX, d3.event.pageY)))
+                .setLatLng(item.CentroidLatLng)
                 .setContent(html)
                 .openOn(map);
             });
@@ -173,7 +182,9 @@ google.setOnLoadCallback(function() {
               autoPan: false,
               className: "venue-popup"
             })
-              .setLatLng(map.layerPointToLatLng(L.point(d3.event.pageX, d3.event.pageY)))
+              // .setLatLng(map.layerPointToLatLng(L.point(d3.event.pageX, d3.event.pageY)))
+              // .setLatLng(map.getBounds().getSouthWest())
+              .setLatLng(new L.LatLng(map.getBounds().getSouth(), map.getBounds().getCenter().lng))
               .setContent(html)
               .openOn(map);
           });
