@@ -171,15 +171,11 @@ function rivers() {
 
       // Reposition the SVG to cover the features.
       function reset() {
-        // console.log("viewreset, reset");
           var bounds = d3path.bounds(collection),
               topLeft = bounds[0],
               bottomRight = bounds[1];
 
-          // console.log("rivers_bucket", rivers_bucket);
           rivers_bucket.forEach(function(item, idx) {
-            // console.log("reset", item);
-
             // here you're setting some styles, width, heigh etc
             // to the SVG. Note that we're adding a little height and
             // width because otherwise the bounding box would perfectly
@@ -288,56 +284,8 @@ function rivers() {
               }
               ending = true;
 
-              // Fade in Leaflet controls
-              d3.select(".leaflet-control-container")
-                .transition()
-                  .style("opacity", 1)
-                  .delay(3500)
-                  .duration(2000);
-
-              // Fade out background rect
-              d3.select("#background-rect")
-                .style("opacity", 1)
-                .transition()
-                  .style("opacity", 0)
-                  .delay(3500)
-                  .duration(2000)
-                .each("end", function() {
-                  d3.select("#background-rect").remove();
-                  svg_rivers.remove();
-                });
-
-              // Begin fading in wetlands
-              d3.selectAll(".wetland-clickable")
-                .attr("class", "wetland clicky")
-                .style("opacity", 0)
-                .transition()
-                  .style("opacity", 1)
-                  .duration(2000);
-              d3.selectAll(".wetland-not-clickable")
-                .attr("class", "wetland")
-                .style("opacity", 0)
-                .transition()
-                  .style("opacity", 1)
-                  .duration(2000);
-
-              // Begin fading in venues
-              d3.selectAll(".venue")
-                .style("opacity", 0)
-                .transition()
-                  .style("opacity", 1)
-                  .delay(5000)
-                  .duration(2000);
-
-              // Fade in links bar
-              d3.select("#links")
-                .transition()
-                  .delay(5000)
-                  .duration(2000)
-                  .style("opacity", 0.95)
-                  .style("display", "block");
-
-              enable_map_interaction();
+              /* Show the stuff on the map */
+              fade_in_map_els();
             });
 
           // item["linePath"].transition()
@@ -408,4 +356,97 @@ function applyLatLngToLayer(d) {
   var y = d.geometry.coordinates[1]
   var x = d.geometry.coordinates[0]
   return map.latLngToLayerPoint(new L.LatLng(y, x))
+}
+
+function fade_in_map_els() {
+  // Fade in Leaflet controls
+  d3.select(".leaflet-control-container")
+    .transition()
+      .style("opacity", 1)
+      .delay(3500)
+      .duration(2000);
+
+  // Fade out background rect
+  d3.select("#background-rect")
+    .style("opacity", 1)
+    .transition()
+      .style("opacity", 0)
+      .delay(3500)
+      .duration(2000)
+    .each("end", function() {
+      d3.select("#background-rect").remove();
+      svg_rivers.remove();
+    });
+
+  // Begin fading in wetlands
+  d3.selectAll(".wetland-clickable")
+    .attr("class", "wetland clicky")
+    .style("opacity", 0)
+    .transition()
+      .style("opacity", 1)
+      .duration(2000);
+  d3.selectAll(".wetland-not-clickable")
+    .attr("class", "wetland")
+    .style("opacity", 0)
+    .transition()
+      .style("opacity", 1)
+      .duration(2000);
+
+  // Begin fading in venues
+  d3.selectAll(".venue")
+    .style("opacity", 0)
+    .transition()
+      .style("opacity", 1)
+      .delay(5000)
+      .duration(2000);
+
+  // Fade in links bar
+  // d3.select("#links")
+  //   .transition()
+  //     .delay(5000)
+  //     .duration(2000)
+  //     .style("opacity", 0.95)
+  //     .style("display", "block");
+
+  // Fade out the skip button
+  d3.select("#skip_narrative")
+    .transition()
+      .delay(5000)
+      .duration(2000)
+      .style("opacity", 0);
+
+  enable_map_interaction();
+}
+
+function show_map_els() {
+  // Fade in Leaflet controls
+  d3.select(".leaflet-control-container")
+    .style("opacity", 1);
+
+  // Fade out background rect
+  d3.select("#background-rect")
+    .style("opacity", 0);
+  d3.select("#background-rect").remove();
+  svg_rivers.remove();
+
+  // Begin fading in wetlands
+  d3.selectAll(".wetland-clickable")
+    .attr("class", "wetland clicky")
+    .style("opacity", 1);
+
+  d3.selectAll(".wetland-not-clickable")
+    .attr("class", "wetland")
+    .style("opacity", 1);
+
+  // Begin fading in venues
+  d3.selectAll(".venue")
+    .interrupt()
+    .style("opacity", 1);
+
+  // Fade in links bar
+  d3.select("#links")
+    .style("opacity", 0.95)
+    .style("display", "block");
+
+  enable_map_interaction();
 }

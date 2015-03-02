@@ -57,6 +57,27 @@ g.append("rect")
   .attr("height", "100%")
   .style("fill", "#FFF");
 
+/* Skip Narrative */
+d3.select("#skip_narrative a")
+  .on("click", function() {
+    d3.event.preventDefault();
+
+    d3.selectAll(".narrative-text")
+      .interrupt()
+      .style("opacity", 0)
+      .transition();
+
+    g.select(".background")
+      .interrupt()
+      .transition()
+      .each("end", function() {
+        show_map_els();
+      });
+    
+    d3.select("#skip_narrative")
+      .style("display", "none");
+  });
+
 /* Project About Content */
 d3.selectAll(".link")
   .on("click", function() {
